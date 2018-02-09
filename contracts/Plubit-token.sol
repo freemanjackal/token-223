@@ -55,6 +55,7 @@ contract Token is ERC223, MathLib {
    * @dev Fix for the ERC20 short address attack.
    */
    address public Ico_contract;      // addres with permission for making transfer
+   address public PreIco_contract;      // addres with permission for making transfer for pre sale
 
   modifier onlyPayloadSize(uint size) {
      require(msg.data.length >= size + 4) ;
@@ -177,7 +178,10 @@ contract MyPlubitToken is Owned, Token {
 
 
     uint256 public constant PlubSale      = 10000000 * 10**decimals;
-    uint256 public constant PlubPreSale   = 5000000 * 10**decimals;
+
+    uint256 public constant MaxPlubPreSale   = 5000000 * 10**decimals; // maximum amount of tokens to be sold in pre ico
+    uint256 public constant PlubPreSale = 0; amount of tokens saled in pre ico
+
     uint256 public constant PlubTeam      = 2000000 * 10**decimals;
     uint256 public constant PlubNet       = 10000000 * 10**decimals;
 
@@ -203,6 +207,10 @@ contract MyPlubitToken is Owned, Token {
       Ico_contract = _ico;
   }
 
+  function loadPreIco(address _preIco) onlyOwner {
+      PreIco_contract = _preIco;
+  }
+
   function transferFromICO(address _from, address _to, uint _value) only_ICO onlyPayloadSize(3 * 32) returns (bool success) {
     balances[_to] = safeAdd(balances[_to], _value);
     balances[_from] = safeSubtract(balances[_from], _value);
@@ -211,10 +219,30 @@ contract MyPlubitToken is Owned, Token {
     return true;
   }
 
+  function transferFromPreICO(address _from, address _to, uint _value) only_PREICO onlyPayloadSize(3 * 32) returns (bool success) {
+    require(PlubPreSale + _value <= MaxPlubPreSale)
+    balances[_to] = safeAdd(balances[_to], _value);
+    PlubPreSale = safeAdd(PlubPreSale, _value);
+    bytes memory data;
+    Transfer(0x, _to, _value, data);
+    return true;
+  }
+
   modifier only_ICO
     {
         require(msg.sender == Ico_contract);
         _;
+}
+
+modifier only_PREICO
+    {
+        require(msg.sender == PreIco_contract);
+        _;
+}
+
+modifier unlocked
+    {
+        return false;
 }
 
 }
